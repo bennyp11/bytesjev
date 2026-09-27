@@ -1,0 +1,30 @@
+{
+  "name": "bytesjev",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "description": "BytesJev PlanningChecker: a local MCP server that asks Jev whether each item in a coding agent's plan is actually needed by the request.",
+  "scripts": {
+    "mcp": "tsx src/mcp/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "smoke:plan": "tsx scripts/smoke-planning.ts",
+    "smoke:mcp": "tsx scripts/smoke-mcp.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.1",
+    "@typesafe-ai/sdk": "^0.6.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.1"
+  }
+}
