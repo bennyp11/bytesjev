@@ -14,44 +14,40 @@ repo context ─┘                      (code decides; Jev judges)
 
 Jev returns typed answers with calibrated probabilities, in one request that evaluates several questions at once, for about $0.04 per million input tokens. It does not generate text, so it never talks the agent into or out of anything; it only answers the specific necessity questions the code asks, and the code turns those probabilities into a recommendation with thresholds you can read and tune.
 
-## Setup
+## Install
+
+You need a TypeSafe API key from https://typesafe.ai. Then, once, from any directory:
 
 ```sh
-cp .env.example .env     # put TYPESAFE_API_KEY in it; .env is gitignored and is the only place the key goes
-npm install
-npm test                 # offline: scripted Jev
-npm run smoke:plan       # one live call: the copy-link example below
-npm run smoke:mcp        # drives the stdio server the way Claude Code does
+claude mcp add --scope user bytesjev -e TYPESAFE_API_KEY=your-key -- npx -y bytesjev
+npx -y bytesjev install-skill
 ```
 
-## Use it from Claude Code
+The first line registers the MCP server for every Claude Code session on this machine; the key lives in Claude Code's own user config, not in any repository. The second installs the skill to `~/.claude/skills/bytesjev/`, which tells Claude Code when to call the tool, what to send, how to treat `review`, and how to justify keeping a flagged item. Run `/mcp` in an open session to reconnect, and the `PlanningChecker` tool is there.
 
-`.mcp.json` in this checkout registers the server:
-
-```json
-{ "mcpServers": { "bytesjev": { "command": "npx", "args": ["tsx", "src/mcp/index.ts"] } } }
-```
-
-Open Claude Code in this directory and the `PlanningChecker` tool is available.
-
-### Use it in any other repository
-
-The server reads its key from this checkout's `.env` wherever it is launched from, so other repositories need no key of their own. Once, from anywhere, register it for your user (replace the path with your checkout):
-
-```sh
-claude mcp add --scope user bytesjev -- /path/to/bytesjev/node_modules/.bin/tsx /path/to/bytesjev/src/mcp/index.ts
-mkdir -p ~/.claude/skills && cp -R /path/to/bytesjev/.claude/skills/bytesjev ~/.claude/skills/
-```
-
-The first line makes the tool available in every Claude Code session on this machine; the second installs the skill that tells Claude Code when to call it, what to send, how to treat `review`, and how to justify keeping a flagged item. Run `/mcp` in an open session to reconnect. To share the setup with a team instead, put the same `command` and `args` (absolute paths) in that repository's `.mcp.json` and the skill under its `.claude/skills/bytesjev/`; each developer still needs their own checkout and key.
+To share the setup with a team, put `{ "command": "npx", "args": ["-y", "bytesjev"] }` under `mcpServers.bytesjev` in the repository's `.mcp.json` and the skill under its `.claude/skills/bytesjev/`; each developer sets `TYPESAFE_API_KEY` in their own environment.
 
 ### Watch it judge
 
 ```sh
-npm run viz          # then open http://localhost:4310
+npx bytesjev viz     # then open http://localhost:4310
 ```
 
-A local page that shows every PlanningChecker call as it happens: the request, each plan item, Jev's six judgments per item drawn as probability meters with the decision threshold as a tick, and the `keep` / `simplify` / `review` code derives from them, with the reason and the quoted evidence. The MCP server posts each call to the page while it runs, so Claude Code in one window and the page in another give a live picture; if the page is not running, nothing changes for the tool. The page can also run the bundled example itself. Press **⌘M** (or add `?mobile`) for a 9:16 phone frame meant for vertical screen recordings; `?dark` and `?light` force the appearance. Set `VIZ_URL` if the page is not on `http://localhost:4310`.
+A local page that shows every PlanningChecker call as it happens: the request, each plan item, Jev's six judgments per item drawn as probability meters with the decision threshold as a tick, and the `keep` / `simplify` / `review` code derives from them, with the reason and the quoted evidence. The MCP server posts each call to the page while it runs, so Claude Code in one window and the page in another give a live picture; if the page is not running, nothing changes for the tool. The page can also run the bundled example itself (it needs `TYPESAFE_API_KEY` in its environment or in a `.env` in the current directory). Press **⌘M** (or add `?mobile`) for a 9:16 phone frame meant for vertical screen recordings; `?dark` and `?light` force the appearance. Set `VIZ_URL` if the page is not on `http://localhost:4310`.
+
+## Develop
+
+```sh
+git clone https://github.com/bennyp11/bytesjev && cd bytesjev
+cp .env.example .env     # put TYPESAFE_API_KEY in it; .env is gitignored
+npm install
+npm test                 # offline: scripted Jev
+npm run smoke:plan       # one live call: the copy-link example below
+npm run smoke:mcp        # drives the stdio server the way Claude Code does
+npm run viz              # the dashboard from source
+```
+
+`.mcp.json` in the checkout runs the server from source (`npx tsx src/mcp/index.ts`), so opening Claude Code in this directory uses your working copy. The server finds the checkout's own `.env` wherever it is launched from. Issues and pull requests are welcome at https://github.com/bennyp11/bytesjev.
 
 ### The tool
 
@@ -87,6 +83,7 @@ The key is read from `TYPESAFE_API_KEY` (or `.env`) and never logged or echoed. 
 ## Layout
 
 ```
+src/cli.ts                     `bytesjev` binary: mcp (default) | viz | install-skill
 src/mcp/index.ts               stdio entry point
 src/mcp/server.ts              the PlanningChecker tool: schema, description, logging
 src/mcp/planning-checker.ts    validation, limits, the decision policy, reasons
