@@ -34,7 +34,7 @@ To share the setup with a team, put `{ "command": "npx", "args": ["-y", "bytesje
 npx bytesjev viz     # then open http://localhost:4310
 ```
 
-A local page that shows every PlanningChecker call as it happens: the request, each plan item, Jev's six judgments per item drawn as probability meters with the decision threshold as a tick, and the `keep` / `simplify` / `review` code derives from them, with the reason and the quoted evidence. The MCP server posts each call to the page while it runs, so Claude Code in one window and the page in another give a live picture; if the page is not running, nothing changes for the tool. The page can also run the bundled example itself (it needs `TYPESAFE_API_KEY` in its environment or in a `.env` in the current directory). Press **⌘M** (or add `?mobile`) for a 9:16 phone frame meant for vertical screen recordings; `?dark` and `?light` force the appearance. Set `VIZ_URL` if the page is not on `http://localhost:4310`.
+A local page that shows every PlanningChecker call as it happens: the request, each plan item, Jev's six judgments per item drawn as probability meters with the decision threshold as a tick, and the `keep` / `simplify` / `review` code derives from them, with the reason and the quoted evidence. The MCP server posts each call to the page while it runs, so Claude Code in one window and the page in another give a live picture; if the page is not running, nothing changes for the tool. The page can also run the bundled example itself (it needs `TYPESAFE_API_KEY` in its environment or in a `.env` in the current directory). Set `VIZ_URL` if the page is not on `http://localhost:4310`.
 
 ## Develop
 

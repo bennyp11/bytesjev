@@ -4,189 +4,178 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PlanningChecker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap">
 <style>
   :root {
-    color-scheme: light dark;
-    --bg: #F5F5F7; --surface: #FFFFFF; --surface-2: #F2F2F4; --line: rgba(0, 0, 0, 0.10);
-    --label: #1D1D1F; --label-2: rgba(0, 0, 0, 0.62); --label-3: rgba(0, 0, 0, 0.55);
-    --accent: #0066CC; --accent-soft: rgba(0, 102, 204, 0.10);
-    --green: #248A3D; --green-soft: rgba(52, 199, 89, 0.16);
-    --red: #D70015; --red-soft: rgba(255, 59, 48, 0.14);
-    --orange: #C93400; --orange-soft: rgba(255, 149, 0, 0.16);
-    --track: rgba(0, 0, 0, 0.08); --bar-bg: rgba(245, 245, 247, 0.78);
-    --radius: 12px; --radius-s: 8px;
-    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color-scheme: light;
+    --bg: #f7f6ed; --text: #173344; --muted: #50656b; --line: #17334426; --accent: #446c60; --card: #fffdf5;
+    --code-bg: #173943; --code-text: #fffbed; --warm: #bc602e; --cream: #f9e5be;
+    --keep: #446c60; --simplify: #bc602e; --review: #50656b;
+    --serif: 'Cormorant Garamond', Georgia, serif;
+    --sans: 'Avenir Next', system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #1E1E1E; --surface: #2A2A2C; --surface-2: #333335; --line: rgba(255, 255, 255, 0.12);
-      --label: #F5F5F7; --label-2: rgba(255, 255, 255, 0.64); --label-3: rgba(255, 255, 255, 0.55);
-      --accent: #0A84FF; --accent-soft: rgba(10, 132, 255, 0.18);
-      --green: #30D158; --green-soft: rgba(48, 209, 88, 0.18);
-      --red: #FF453A; --red-soft: rgba(255, 69, 58, 0.18);
-      --orange: #FF9F0A; --orange-soft: rgba(255, 159, 10, 0.18);
-      --track: rgba(255, 255, 255, 0.10); --bar-bg: rgba(30, 30, 30, 0.78);
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #1E1E1E; --surface: #2A2A2C; --surface-2: #333335; --line: rgba(255, 255, 255, 0.12);
-    --label: #F5F5F7; --label-2: rgba(255, 255, 255, 0.64); --label-3: rgba(255, 255, 255, 0.55);
-    --accent: #0A84FF; --accent-soft: rgba(10, 132, 255, 0.18);
-    --green: #30D158; --green-soft: rgba(48, 209, 88, 0.18);
-    --red: #FF453A; --red-soft: rgba(255, 69, 58, 0.18);
-    --orange: #FF9F0A; --orange-soft: rgba(255, 159, 10, 0.18);
-    --track: rgba(255, 255, 255, 0.10); --bar-bg: rgba(30, 30, 30, 0.78);
-  }
-
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--label); font: 13px/1.45 var(--font); -webkit-font-smoothing: antialiased; }
+  [hidden] { display: none !important; }
   html { height: 100%; }
-  body { height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-  h1, h2, h3 { margin: 0; font-weight: 600; }
-  h2 { font-size: 13px; color: var(--label-2); }
-  button { font: inherit; color: inherit; }
+  body { margin: 0; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { margin: 0; font-family: var(--serif); font-weight: 500; letter-spacing: -.03em; }
+  button { font: inherit; color: inherit; cursor: pointer; }
   .num { font-variant-numeric: tabular-nums; }
-  .muted { color: var(--label-2); }
-  .faint { color: var(--label-3); }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  :focus-visible { outline: 3px solid var(--warm); outline-offset: 4px; }
   .app { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-  .bar {
-    flex: none; z-index: 10; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    padding: 12px 20px; border-bottom: 1px solid var(--line);
-    background: var(--bar-bg); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  /* Header: the site's floating pill, flattened into a bar. */
+  .bar { flex: none; z-index: 10; display: flex; align-items: center; gap: 18px; padding: 14px 28px; border-bottom: 1px solid #fff; background: linear-gradient(#f5fbffe8, #deedf5cc); backdrop-filter: blur(18px) saturate(1.05); -webkit-backdrop-filter: blur(18px) saturate(1.05); box-shadow: inset 0 -2px 3px #3a5e6520; }
+  .brand { display: flex; align-items: baseline; gap: 10px; text-decoration: none; }
+  .brand .name { font: 500 26px/1 var(--serif); letter-spacing: -.035em; }
+  .brand .name::before { content: '/'; color: var(--accent); }
+  .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 2.2px; text-transform: uppercase; color: var(--muted); }
+  .eyebrow .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: 1px; }
+  .eyebrow.live .dot { animation: pulse 1.4s ease-in-out infinite; }
+  .facts { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-left: auto; font-size: 12px; color: var(--muted); }
+  .facts b { font-weight: 600; color: var(--text); }
+  .btn { display: inline-flex; align-items: center; min-height: 34px; padding: 0 16px; border: 1px solid var(--line); border-radius: 20px; background: var(--card); font-size: 12px; font-weight: 600; }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .pane { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 26px 0 60px; }
+  .wrap { width: min(880px, calc(100% - 56px)); margin-inline: auto; display: flex; flex-direction: column; gap: 26px; }
+  .empty { border: 1px dashed var(--line); border-radius: 20px; padding: 36px; color: var(--muted); font-size: 14px; }
+  .empty b { display: block; color: var(--text); font: 500 26px/1.2 var(--serif); margin-bottom: 8px; }
+
+  /* One check: a card in the site's skill-card idiom. */
+  .call { display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border: 1px solid #fff; border-radius: 24px; background: linear-gradient(145deg, #fffef9, #eaf0e8); box-shadow: 0 8px 25px -20px #17334466, inset 0 1px 0 white; animation: fade 240ms ease-out; }
+  .call .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+  .call .head .when { margin-left: auto; font-size: 11px; color: var(--muted); }
+  .call .req { font-size: 30px; line-height: 1.12; text-wrap: pretty; }
+  .call .req::before { content: '“'; color: var(--accent); }
+  .call .req::after { content: '”'; color: var(--accent); }
+  .items { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .tally { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; font-size: 12px; color: var(--muted); }
+  .tally b { font-weight: 600; color: var(--text); }
+  .lims { margin: 0; padding-left: 18px; font-size: 12px; color: var(--muted); }
+  details.lims-wrap summary, details.item summary { list-style: none; cursor: pointer; }
+  details summary::-webkit-details-marker { display: none; }
+  details.lims-wrap summary { font-size: 11px; color: var(--muted); text-decoration: underline; text-underline-offset: 4px; }
+
+  /* One plan item: one calm row; open it for the judgments. */
+  details.item { border-bottom: 1px solid var(--line); }
+  details.item summary { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 12px 4px; }
+  details.item summary:hover { background: #ffffff70; }
+  .verdict { display: inline-flex; align-items: center; justify-content: center; justify-self: start; min-height: 26px; padding: 0 12px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: .4px; text-transform: uppercase; border: 1px solid var(--line); color: var(--muted); background: #fffdf580; }
+  .line { grid-column: 2; margin-top: -4px; font-size: 13px; line-height: 1.5; color: var(--muted); }
+  .verdict.keep { background: var(--keep); border-color: var(--keep); color: #fffbed; }
+  .verdict.simplify { border-color: var(--simplify); color: var(--simplify); background: #fff3ea; }
+  .verdict.review { border-style: dashed; }
+  .verdict.waiting { color: var(--muted); }
+  .verdict.waiting::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 8px; animation: pulse 1.2s ease-in-out infinite; }
+  .change { font-size: 15px; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+  .change .flag { margin-left: 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--warm); }
+  .glance { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+  .glance .score { font-size: 12px; color: var(--muted); }
+  .glance .score b { color: var(--text); font-weight: 600; }
+  .glance .ms { font-size: 11px; color: var(--muted); }
+  /* six tiny meters, one per judgment, readable at a glance */
+  .strip { display: grid; grid-template-columns: repeat(6, 22px); gap: 3px; }
+  .strip i { height: 6px; border-radius: 3px; background: #17334418; position: relative; overflow: hidden; }
+  .strip i::after { content: ''; position: absolute; inset: 0; width: calc(var(--v, 0) * 100%); background: var(--tone, var(--accent)); border-radius: 3px; transition: width 420ms cubic-bezier(.2,.7,.2,1); }
+  .strip i.on::after { --tone: var(--accent); }
+  .strip i.warn::after { --tone: var(--warm); }
+  .strip i.off::after { --tone: #17334455; }
+  .strip i.na { background: repeating-linear-gradient(90deg, #17334418 0 3px, transparent 3px 6px); }
+  .strip i.na::after { display: none; }
+
+  .body { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 14px 16px; padding: 4px 4px 18px; }
+  .body .why { grid-column: 2; font-size: 14px; color: var(--muted); font-style: italic; }
+  .body .signals { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 28px; }
+  .sig .k { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .sig .k b { font-weight: 500; color: var(--text); }
+  .sig.na { opacity: .55; }
+  .meter { position: relative; height: 7px; border-radius: 4px; background: #17334418; }
+  .meter i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v, 0) * 100%); border-radius: 4px; background: var(--tone, var(--accent)); transition: width 420ms cubic-bezier(.2,.7,.2,1); }
+  .meter b { position: absolute; top: -4px; left: calc(var(--t, .5) * 100%); width: 2px; height: 15px; margin-left: -1px; border-radius: 1px; background: #17334466; }
+  .meter.on i { --tone: var(--accent); }
+  .meter.warn i { --tone: var(--warm); }
+  .meter.off i { --tone: #17334455; }
+  .body .reason { grid-column: 2; font-size: 14px; line-height: 1.6; }
+  .body details.ev { grid-column: 2; }
+  .body details.ev summary { font-size: 11px; color: var(--muted); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+  .quote { margin-top: 8px; padding: 14px 18px; border-radius: 14px; background: var(--code-bg); color: var(--code-text); font: 12px/1.7 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  /* How it decides: closed by default, one panel under the header. */
+  .how { border: 1px solid var(--line); border-radius: 20px; background: #fffdf580; }
+  .how summary { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 22px; list-style: none; cursor: pointer; font-size: 14px; }
+  .how summary::-webkit-details-marker { display: none; }
+  .how summary .eyebrow { margin: 0; }
+  .how-body { padding: 0 22px 22px; display: grid; gap: 14px; font-size: 13px; color: var(--muted); }
+  .how-body b { color: var(--text); font-weight: 600; }
+  .qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .q { padding: 12px 14px; border-radius: 14px; background: #fffdf5; border: 1px solid var(--line); }
+  .q .key { font: 11px var(--mono); color: var(--accent); margin-bottom: 4px; }
+  .q .ins { font-size: 12.5px; color: var(--text); }
+
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+  @media (max-width: 700px) {
+    .wrap { width: calc(100% - 32px); }
+    .bar { padding: 12px 16px; }
+    .call { padding: 20px 18px; }
+    .call .req { font-size: 25px; }
+    details.item summary { grid-template-columns: 1fr; gap: 6px; }
+    .line { grid-column: 1; }
+    .body { grid-template-columns: 1fr; }
+    .body .why, .body .signals, .body .reason, .body details.ev { grid-column: 1; }
+    .body .signals { grid-template-columns: 1fr; }
   }
-  .brand { display: flex; align-items: baseline; gap: 8px; }
-  .brand h1 { font-size: 15px; letter-spacing: -0.01em; }
-  .brand .sub { color: var(--label-2); }
-  .status { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--label-2); margin-left: auto; }
-  .status b { color: var(--label); font-weight: 500; }
-  .btn { height: 30px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--label); font-weight: 500; cursor: pointer; white-space: nowrap; }
-  .btn:hover { background: var(--surface-2); }
-  .btn.primary { background: var(--accent); border-color: transparent; color: #fff; font-weight: 600; }
-  .btn.mini { height: 22px; padding: 0 8px; font-size: 11px; color: var(--label-2); }
 
-  .grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.6fr); gap: 16px; padding: 14px 20px 0; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .col.side { display: none; } }
-  .col { display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
-  .col > h2 { flex: none; padding: 0 2px; }
-  .pane { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px 2px 24px; display: flex; flex-direction: column; gap: 14px; }
-  .empty { color: var(--label-2); padding: 18px 14px; border: 1px dashed var(--line); border-radius: var(--radius); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
-
-  /* One check */
-  .call { display: flex; flex-direction: column; gap: 10px; animation: fade 200ms ease-out; }
-  .call .req { font-size: 17px; line-height: 1.35; font-weight: 600; letter-spacing: -0.01em; }
-  .call .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .call .items { display: flex; flex-direction: column; gap: 10px; }
-  .call .ctx { color: var(--label-2); white-space: pre-wrap; max-height: 120px; overflow: auto; }
-  .call details summary { cursor: pointer; color: var(--accent); font-weight: 500; list-style: none; display: inline-flex; align-items: center; gap: 6px; min-height: 22px; }
-  .call details summary::-webkit-details-marker { display: none; }
-  .call details summary::before { content: "▸"; font-size: 11px; transition: transform 160ms ease-out; }
-  .call details[open] summary::before { transform: rotate(90deg); }
-  .outcome { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; color: var(--label-2); }
-  .lims { margin: 6px 0 0; padding-left: 18px; color: var(--label-2); }
-
-  /* One plan item */
-  .item { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: start; }
-  .item .id { font-family: var(--mono); font-size: 12px; color: var(--label-3); padding-top: 3px; }
-  .item .change { font-weight: 500; }
-  .item .why { color: var(--label-2); }
-  .item .verdict { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 24px; }
-  .item .reason { grid-column: 2; color: var(--label-2); }
-  .item .signals { grid-column: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin-top: 2px; }
-  .item.waiting .signals { opacity: 0.55; }
-  .item .waiting-note { display: inline-flex; align-items: center; gap: 6px; color: var(--label-3); }
-  .item .waiting-note i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
-  .item .qa { grid-column: 2; }
-  .sig .k { display: flex; justify-content: space-between; gap: 8px; color: var(--label-3); font-size: 11px; margin-bottom: 3px; }
-  .sig .k b { color: var(--label-2); font-weight: 500; }
-  .sig.na .k { opacity: 0.6; }
-
-  /* The signature: a probability meter with the decision threshold as a tick. */
-  .meter { position: relative; height: 6px; border-radius: 3px; background: var(--track); }
-  .meter i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v, 0) * 100%); border-radius: 3px; background: var(--tone, var(--accent)); transition: width 420ms cubic-bezier(.2,.7,.2,1); }
-  .meter b { position: absolute; top: -3px; left: calc(var(--t, 0.5) * 100%); width: 2px; height: 12px; margin-left: -1px; border-radius: 1px; background: var(--label-3); }
-  .meter.green i { --tone: var(--green); }
-  .meter.red i { --tone: var(--red); }
-  .meter.orange i { --tone: var(--orange); }
-  .meter.gray i { --tone: var(--label-3); }
-  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0.01em; }
-  .chip.green { background: var(--green-soft); color: var(--green); }
-  .chip.red { background: var(--red-soft); color: var(--red); }
-  .chip.orange { background: var(--orange-soft); color: var(--orange); }
-  .chip.gray { background: var(--track); color: var(--label-2); }
-  .chip.blue { background: var(--accent-soft); color: var(--accent); }
-  .chip.big { font-size: 13px; padding: 3px 11px; }
-  .quote { font-family: var(--mono); font-size: 12px; color: var(--label-2); border-left: 2px solid var(--line); padding-left: 8px; white-space: pre-wrap; }
-
-  /* Side column: the questions and the policy */
-  .q { padding: 8px 10px; background: var(--surface-2); border-radius: 8px; display: flex; flex-direction: column; gap: 4px; }
-  .q .key { font-family: var(--mono); font-size: 11px; color: var(--label-3); }
-  .q .crit { color: var(--label-2); font-size: 12px; white-space: pre-wrap; }
-  .policy { display: flex; flex-direction: column; gap: 6px; color: var(--label-2); }
-  .policy b { color: var(--label); font-weight: 600; }
-
-  @keyframes fade { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
-  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { .meter i { transition: none; } .call { animation: none; } .item .waiting-note i { animation: none; } }
-
-  /* Mobile mode (⌘M or ?mobile): a 9:16 phone frame scaled to the window, one column, bigger type,
-     content kept clear of the caption and icon rails TikTok and Reels draw over the bottom and right edges. */
-  :root[data-mode="mobile"] body { align-items: center; justify-content: center; background: #000; }
-  :root[data-mode="mobile"] .app { flex: none; width: 390px; height: 844px; overflow: hidden; border-radius: 28px; background: var(--bg); transform: scale(var(--phone-scale, 1)); transform-origin: center; font-size: 16px; }
-  :root[data-mode="mobile"] .bar { padding: 14px 56px 10px 18px; gap: 6px 12px; }
-  :root[data-mode="mobile"] .brand h1 { font-size: 17px; }
-  :root[data-mode="mobile"] .brand .sub, :root[data-mode="mobile"] .btn.mini, :root[data-mode="mobile"] #run { display: none; }
-  :root[data-mode="mobile"] .status { margin-left: 0; width: 100%; font-size: 14px; gap: 2px 12px; }
-  :root[data-mode="mobile"] .grid { display: flex; flex-direction: column; padding: 12px 56px 0 18px; }
-  :root[data-mode="mobile"] .col.side { display: none; }
-  :root[data-mode="mobile"] .col > h2 { display: none; }
-  :root[data-mode="mobile"] .pane { padding-bottom: 170px; gap: 18px; }
-  :root[data-mode="mobile"] .call .req { font-size: 20px; }
-  :root[data-mode="mobile"] .call .ctx, :root[data-mode="mobile"] .call details { display: none; }
-  :root[data-mode="mobile"] .card { padding: 12px 14px; }
-  :root[data-mode="mobile"] .item { grid-template-columns: 1fr; gap: 6px; }
-  :root[data-mode="mobile"] .item .id { display: none; }
-  :root[data-mode="mobile"] .item .change { font-size: 16px; }
-  :root[data-mode="mobile"] .item .why { font-size: 14px; }
-  :root[data-mode="mobile"] .item .verdict, :root[data-mode="mobile"] .item .reason, :root[data-mode="mobile"] .item .signals, :root[data-mode="mobile"] .item .qa { grid-column: 1; }
-  :root[data-mode="mobile"] .item .qa { display: none; }
-  :root[data-mode="mobile"] .item .reason { font-size: 14px; }
-  :root[data-mode="mobile"] .item .signals { grid-template-columns: 1fr; gap: 7px; }
-  :root[data-mode="mobile"] .sig .k { margin-bottom: 2px; }
-  :root[data-mode="mobile"] .sig .k { font-size: 12px; }
-  :root[data-mode="mobile"] .meter { height: 8px; border-radius: 4px; }
-  :root[data-mode="mobile"] .meter b { height: 14px; }
-  :root[data-mode="mobile"] .chip { font-size: 13px; padding: 2px 10px; }
-  :root[data-mode="mobile"] .chip.big { font-size: 15px; padding: 4px 12px; }
+  /* ?mobile: a 9:16 frame for vertical recordings. Not persisted; the URL is the switch. */
+  :root[data-mode="mobile"] body { align-items: center; justify-content: center; background: #0b1a20; }
+  :root[data-mode="mobile"] .app { flex: none; width: 390px; height: 844px; overflow: hidden; border-radius: 28px; background: var(--bg); transform: scale(var(--phone-scale, 1)); transform-origin: center; }
+  :root[data-mode="mobile"] .bar { padding: 16px 56px 12px 18px; gap: 6px 10px; }
+  :root[data-mode="mobile"] .bar .btn, :root[data-mode="mobile"] .bar .eyebrow { display: none; }
+  :root[data-mode="mobile"] .facts { margin-left: 0; width: 100%; gap: 2px 14px; }
+  :root[data-mode="mobile"] .pane { padding: 16px 0 170px; }
+  :root[data-mode="mobile"] .wrap { width: calc(100% - 74px); margin: 0 56px 0 18px; gap: 18px; }
+  :root[data-mode="mobile"] .how { display: none; }
+  :root[data-mode="mobile"] .call { padding: 18px 16px; gap: 10px; }
+  :root[data-mode="mobile"] .call .req { font-size: 26px; }
+  :root[data-mode="mobile"] details.item summary { grid-template-columns: 1fr; gap: 6px; padding: 12px 2px; }
+  :root[data-mode="mobile"] .change { font-size: 15px; }
+  :root[data-mode="mobile"] .line { grid-column: 1; font-size: 13px; }
+  :root[data-mode="mobile"] .glance { justify-content: space-between; }
+  :root[data-mode="mobile"] .strip { grid-template-columns: repeat(6, 26px); }
+  :root[data-mode="mobile"] .body { grid-template-columns: 1fr; }
+  :root[data-mode="mobile"] .body .why, :root[data-mode="mobile"] .body .signals, :root[data-mode="mobile"] .body .reason { grid-column: 1; }
+  :root[data-mode="mobile"] .body .signals { grid-template-columns: 1fr; gap: 9px; }
+  :root[data-mode="mobile"] .body details.ev { display: none; }
 </style>
 </head>
 <body>
   <div class="app" id="app">
   <header class="bar">
-    <div class="brand"><h1>PlanningChecker</h1><span class="sub">Jev judging a coding agent's plan</span><button class="btn mini" id="mode" type="button" title="Toggle the 9:16 mobile view (⌘M)">⌘M mobile</button></div>
-    <button class="btn primary" id="run" type="button">Run the example</button>
-    <div class="status" id="status" aria-live="polite"></div>
+    <a class="brand" href="/"><span class="name">bytesjev</span></a>
+    <span class="eyebrow live" id="live"><i class="dot"></i>Planning checker · live</span>
+    <div class="facts" id="facts"></div>
+    <button class="btn" id="run" type="button">Run the example</button>
   </header>
-  <main class="grid">
-    <section class="col main" aria-label="Checks">
-      <h2>Checks, newest last</h2>
-      <div class="pane" id="calls"></div>
-    </section>
-    <section class="col side" aria-label="How it decides">
-      <h2>What Jev is asked, and how code decides</h2>
-      <div class="pane" id="side"></div>
-    </section>
-  </main>
+  <div class="pane" id="pane">
+    <div class="wrap" id="wrap">
+      <details class="how" id="how">
+        <summary><span class="eyebrow">How it decides</span><span style="font-size:12px;color:var(--muted)">the six questions and the thresholds</span></summary>
+        <div class="how-body" id="how-body"></div>
+      </details>
+      <div id="calls" style="display:flex;flex-direction:column;gap:26px"></div>
+    </div>
+  </div>
   </div>
 
 <script>
 (() => {
   const params = new URLSearchParams(location.search);
-  if (params.has("dark")) document.documentElement.dataset.theme = "dark";
-  if (params.has("light")) document.documentElement.dataset.theme = "light";
   const $ = (id) => document.getElementById(id);
   const h = (tag, attrs = {}, ...children) => {
     const el = document.createElement(tag);
@@ -201,188 +190,143 @@
     return el;
   };
   const fmt = (n) => (typeof n === "number" && Number.isFinite(n) ? n.toFixed(2) : "–");
-  const pct = (n) => `${Math.round(n * 100)}%`;
-  const chip = (text, tone, big) => h("span", { class: `chip ${tone}${big ? " big" : ""}` }, text);
-  const meter = (v, t, tone, label) => h("div", { class: `meter ${tone}`, style: `--v:${Math.max(0, Math.min(1, v || 0))};--t:${t}`, role: "img", "aria-label": `${label}: ${fmt(v)} of 1` }, h("i"), t != null ? h("b") : null);
+  const clock = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-  // ---- mobile mode: ⌘M (Ctrl-M elsewhere), a bare M, or ?mobile. Remembered per browser.
-  const PHONE = { w: 390, h: 844 };
-  const isMobile = () => document.documentElement.dataset.mode === "mobile";
-  function fitPhone() {
-    if (!isMobile()) return;
-    document.documentElement.style.setProperty("--phone-scale", Math.min(innerHeight / PHONE.h, innerWidth / PHONE.w).toFixed(4));
-  }
-  function setMobile(on) {
-    if (on) document.documentElement.dataset.mode = "mobile"; else delete document.documentElement.dataset.mode;
-    try { localStorage.setItem("bytesjev.mode", on ? "mobile" : "desktop"); } catch {}
-    fitPhone();
-  }
-  {
-    let initial = false;
-    try { initial = localStorage.getItem("bytesjev.mode") === "mobile"; } catch {}
-    if (params.has("mobile")) initial = true;
-    if (params.has("desktop")) initial = false;
-    setMobile(initial);
-  }
-  addEventListener("resize", fitPhone);
-  document.addEventListener("keydown", (e) => {
-    if (e.key.toLowerCase() !== "m" || e.altKey || e.shiftKey) return;
-    const inField = /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement && document.activeElement.tagName) || "");
-    if (e.metaKey || e.ctrlKey || !inField) { e.preventDefault(); setMobile(!isMobile()); }
-  });
-  $("mode").addEventListener("click", () => setMobile(!isMobile()));
+  // ---- ?mobile: the recording frame. The URL is the only switch; nothing is remembered.
+  try { localStorage.removeItem("bytesjev.mode"); } catch {}
+  const isMobile = params.has("mobile");
+  if (isMobile) document.documentElement.dataset.mode = "mobile";
+  const fitPhone = () => { if (isMobile) document.documentElement.style.setProperty("--phone-scale", Math.min(innerHeight / 844, innerWidth / 390).toFixed(4)); };
+  fitPhone(); addEventListener("resize", fitPhone);
 
   // ---- thresholds mirror src/mcp/planning-checker.ts THRESHOLDS
   const T = { keep: 0.65, low: 0.35, support: 0.7, droppable: 0.7 };
   const SIGNALS = [
-    { key: "necessary", label: "necessary", t: T.keep, tone: (v) => (v >= T.keep ? "green" : v < T.low ? "orange" : "gray") },
-    { key: "requested", label: "the request asks for it", t: T.support, tone: (v) => (v >= T.support ? "green" : "gray") },
-    { key: "convention", label: "follows a stated convention", t: T.support, tone: (v) => (v >= T.support ? "green" : "gray"), na: "no repo context" },
-    { key: "safety", label: "needed for correctness or security", t: T.support, tone: (v) => (v >= T.support ? "green" : "gray") },
-    { key: "speculative", label: "rationale is about the future", t: T.support, tone: (v) => (v >= T.support ? "orange" : "gray") },
-    { key: "droppable", label: "the rest of the plan suffices without it", t: T.droppable, tone: (v) => (v >= T.droppable ? "orange" : "gray"), na: "only item" },
+    { key: "necessary", label: "necessary", t: T.keep, tone: (v) => (v >= T.keep ? "on" : v < T.low ? "warn" : "off") },
+    { key: "requested", label: "the request asks for it", t: T.support, tone: (v) => (v >= T.support ? "on" : "off") },
+    { key: "convention", label: "follows a stated convention", t: T.support, tone: (v) => (v >= T.support ? "on" : "off"), na: "no repo context" },
+    { key: "safety", label: "needed for correctness or security", t: T.support, tone: (v) => (v >= T.support ? "on" : "off") },
+    { key: "speculative", label: "rationale is about the future", t: T.support, tone: (v) => (v >= T.support ? "warn" : "off") },
+    { key: "droppable", label: "the rest of the plan suffices without it", t: T.droppable, tone: (v) => (v >= T.droppable ? "warn" : "off"), na: "only item" },
   ];
-  const REC = { keep: ["keep", "green"], simplify: ["simplify", "orange"], review: ["review", "blue"] };
 
-  const state = { model: "", calls: new Map(), count: 0, tokens: 0, lastMs: null, jevMs: 0 };
-  const pane = $("calls");
+  const state = { model: "", calls: new Map(), count: 0, tokens: 0, questions: null };
+  const pane = $("pane"), callsEl = $("calls");
   const follow = (el) => requestAnimationFrame(() => {
-    const near = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 200;
-    if (isMobile() || near) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const near = pane.scrollHeight - pane.scrollTop - pane.clientHeight < 240;
+    if (isMobile || near) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
 
-  function renderStatus() {
+  function renderFacts() {
     const parts = [h("span", {}, "jev ", h("b", {}, state.model || "–"))];
     if (state.count) parts.push(h("span", {}, "checks ", h("b", { class: "num" }, String(state.count))));
-    if (state.lastMs != null) parts.push(h("span", {}, "last ", h("b", { class: "num" }, `${(state.lastMs / 1000).toFixed(1)}s`)));
-    if (state.tokens) parts.push(h("span", {}, "Jev ", h("b", { class: "num" }, `${state.tokens.toLocaleString()} tokens`), h("span", { class: "num" }, ` · $${(state.tokens * 42 / 1e9).toFixed(4)}`)));
-    $("status").replaceChildren(...parts);
+    if (state.tokens) parts.push(h("span", {}, h("b", { class: "num" }, state.tokens.toLocaleString()), " tokens · ", h("b", { class: "num" }, `$${(state.tokens * 42 / 1e9).toFixed(4)}`)));
+    $("facts").replaceChildren(...parts);
   }
   function renderEmpty() {
-    if (pane.children.length) return;
-    pane.replaceChildren(h("div", { class: "empty" },
-      h("div", {}, "Every PlanningChecker call shows up here as it happens: the request, each plan item, Jev's six judgments per item, and the recommendation code derives from them."),
-      h("div", { class: "muted" }, "Call the tool from Claude Code, or run the bundled example."),
-    ));
+    if (callsEl.children.length) return;
+    callsEl.replaceChildren(h("div", { class: "empty" }, h("b", {}, "Nothing judged yet."), "Every PlanningChecker call lands here as it happens: the request, each plan item, and what Jev made of it. Call the tool from Claude Code, or run the bundled example."));
   }
 
-  function signalRow(sig, judgment) {
-    const v = judgment ? judgment[sig.key] : null;
-    const na = judgment && v === null;
-    return h("div", { class: `sig${na ? " na" : ""}` },
-      h("div", { class: "k" }, h("b", {}, sig.label), h("span", { class: "num" }, na ? sig.na : judgment ? fmt(v) : "–")),
-      meter(na ? 0 : v || 0, sig.t, judgment && !na ? sig.tone(v) : "gray", sig.label));
-  }
+  const strip = (j) => h("span", { class: "strip", role: "img", "aria-label": j ? SIGNALS.map((s) => `${s.label} ${fmt(j[s.key])}`).join(", ") : "not judged yet" },
+    SIGNALS.map((s) => { const v = j ? j[s.key] : null; return h("i", { class: j ? (v === null ? "na" : s.tone(v)) : "", style: `--v:${v == null ? 0 : v}` }); }));
+  const meterRow = (s, j) => { const v = j[s.key]; const na = v === null; return h("div", { class: `sig${na ? " na" : ""}` },
+    h("div", { class: "k" }, h("b", {}, s.label), h("span", { class: "num" }, na ? s.na : fmt(v))),
+    h("div", { class: `meter ${na ? "off" : s.tone(v)}`, style: `--v:${na ? 0 : v};--t:${s.t}` }, h("i"), h("b"))); };
 
-  function itemCard(call, it) {
-    const card = h("div", { class: "card item waiting", "data-item": it.id },
-      h("span", { class: "id" }, it.id),
-      h("div", {}, h("div", { class: "change" }, it.change), it.rationale ? h("div", { class: "why" }, `“${it.rationale}”`) : null),
-      h("div", { class: "verdict" }, h("span", { class: "waiting-note" }, h("i"), "asking Jev")),
-      h("div", { class: "signals" }, SIGNALS.map((s) => signalRow(s, null))),
-    );
-    return card;
+  function itemRow(it) {
+    const d = h("details", { class: "item", "data-item": it.id },
+      h("summary", {},
+        h("span", { class: "verdict waiting" }, "judging"),
+        h("span", { class: "change" }, it.change),
+        h("span", { class: "glance" }, strip(null))),
+      h("div", { class: "body" }, h("span"), it.rationale ? h("div", { class: "why" }, `“${it.rationale}”`) : h("span")));
+    return d;
   }
 
   function onCall(m) {
     if (state.calls.has(m.id)) return;
-    if (!pane.querySelector(".call")) pane.replaceChildren();
+    if (!callsEl.querySelector(".call")) callsEl.replaceChildren();
     const items = new Map();
-    const section = h("section", { class: "call", "data-call": m.id },
-      h("div", { class: "card" },
-        h("div", { class: "req" }, m.request),
-        h("div", { class: "meta" },
-          chip(m.source === "claude-code" ? "from Claude Code" : "from this page", "blue"),
-          chip(`${m.items.length} plan ${m.items.length === 1 ? "item" : "items"}`, "gray"),
-          chip(m.context ? `repo context, ${m.context.length.toLocaleString()} chars` : "no repo context", m.context ? "gray" : "orange"),
-          h("span", { class: "muted num", "data-role": "elapsed" }, ""),
-        ),
-        m.context ? h("details", {}, h("summary", {}, "Repository context as sent"), h("div", { class: "ctx" }, m.context)) : null,
-      ),
-      h("div", { class: "items" }, m.items.map((it) => { const c = itemCard(m, it); items.set(it.id, c); return c; })),
+    const card = h("section", { class: "call", "data-call": m.id },
+      h("div", { class: "head" },
+        h("span", { class: "eyebrow" }, m.source === "claude-code" ? "from Claude Code" : "from this page"),
+        h("span", { class: "eyebrow" }, `${m.items.length} plan ${m.items.length === 1 ? "item" : "items"}`),
+        h("span", { class: "eyebrow" }, m.context ? "with repo context" : "no repo context"),
+        h("span", { class: "when num" }, clock(m.t))),
+      h("h2", { class: "req" }, m.request),
+      h("div", { class: "items" }, m.items.map((it) => { const r = itemRow(it); items.set(it.id, r); return r; })),
     );
-    pane.append(section);
-    state.calls.set(m.id, { el: section, items, msg: m, judged: 0 });
-    state.count += 1; renderStatus();
-    follow(section);
-    renderSide(m.questions);
+    callsEl.append(card);
+    state.calls.set(m.id, { el: card, items, msg: m });
+    state.count += 1; renderFacts();
+    if (m.questions) { state.questions = m.questions; renderHow(); }
+    follow(card);
   }
 
   function onItem(m) {
     const call = state.calls.get(m.id); if (!call) return;
-    const card = call.items.get(m.itemId); if (!card) return;
+    const row = call.items.get(m.itemId); if (!row) return;
     const j = m.judgment, r = m.result;
-    card.classList.remove("waiting");
-    const [label, tone] = REC[r.recommendation] || [r.recommendation, "gray"];
-    // replaceChildren turns a null argument into the text "null", so build the row with h().
-    card.querySelector(".verdict").replaceChildren(...h("div", {},
-      chip(label, tone, true),
-      r.uncertain ? chip("uncertain", "orange") : null,
-      h("span", { class: "muted num" }, `necessity ${fmt(r.necessity_score)}`),
-      h("span", { class: "faint num" }, typeof m.inputTokens === "number" ? `${m.ms} ms · ${m.inputTokens.toLocaleString()} tok` : `${m.ms} ms`),
+    const sum = row.querySelector("summary");
+    sum.replaceChildren(...h("div", {},
+      h("span", { class: `verdict ${r.recommendation}` }, r.recommendation),
+      h("span", { class: "change" }, call.msg.items.find((i) => i.id === m.itemId).change, r.uncertain ? h("span", { class: "flag" }, "uncertain") : null),
+      h("span", { class: "glance" }, h("span", { class: "score" }, "necessity ", h("b", { class: "num" }, fmt(r.necessity_score))), strip(j), h("span", { class: "ms num" }, `${m.ms} ms`)),
+      h("span", { class: "line" }, r.reason),
     ).childNodes);
-    card.querySelector(".signals").replaceChildren(...SIGNALS.map((s) => signalRow(s, j)));
-    card.querySelector(".signals").after(h("div", { class: "reason" }, r.reason));
-    if (r.evidence && r.evidence.length) card.querySelector(".reason").after(h("div", { class: "qa" }, h("div", { class: "quote" }, r.evidence.map((e, i) => (i ? "\n" : "") + e))));
+    const body = row.querySelector(".body");
+    body.append(
+      h("div", { class: "signals" }, SIGNALS.map((s) => meterRow(s, j))),
+      h("div", { class: "reason" }, r.reason),
+      r.evidence && r.evidence.length ? h("details", { class: "ev" }, h("summary", {}, "what it quoted"), h("div", { class: "quote" }, r.evidence.join("\n\n"))) : null,
+    );
     if (typeof m.inputTokens === "number") state.tokens += m.inputTokens;
-    call.judged += 1; renderStatus();
-    follow(card);
+    renderFacts();
+    follow(row);
   }
 
   function onDone(m) {
     const call = state.calls.get(m.id);
-    state.lastMs = m.ms; renderStatus();
     if (!call) {
-      // invalid input never produced a call: show it as its own note
-      pane.append(h("section", { class: "call" }, h("div", { class: "card" }, h("div", { class: "meta" }, chip(`status ${m.status}`, "red")), m.errors ? h("ul", { class: "lims" }, m.errors.map((e) => h("li", {}, e))) : null)));
+      callsEl.append(h("section", { class: "call" }, h("div", { class: "head" }, h("span", { class: "eyebrow", style: "color:var(--warm)" }, `status ${m.status}`), h("span", { class: "when num" }, clock(m.t))), m.errors ? h("ul", { class: "lims" }, m.errors.map((e) => h("li", {}, e))) : null));
       return;
     }
     const counts = { keep: 0, simplify: 0, review: 0 };
-    for (const c of call.items.values()) { const chipEl = c.querySelector(".verdict .chip.big"); if (chipEl) counts[chipEl.textContent] = (counts[chipEl.textContent] || 0) + 1; }
-    const outcome = h("div", { class: "card outcome" });
+    for (const r of call.items.values()) { const v = r.querySelector(".verdict"); if (v && counts[v.textContent] !== undefined) counts[v.textContent] += 1; }
+    const tally = h("div", { class: "tally" });
     if (m.status === "ok") {
-      outcome.append(chip(`${counts.keep} keep`, "green"), chip(`${counts.simplify} simplify`, "orange"), chip(`${counts.review} review`, "blue"), h("span", { class: "num" }, `${(m.ms / 1000).toFixed(1)}s`));
+      tally.append(h("span", {}, h("b", { class: "num" }, String(counts.keep)), " keep"), h("span", {}, h("b", { class: "num" }, String(counts.simplify)), " simplify"), h("span", {}, h("b", { class: "num" }, String(counts.review)), " review"), h("span", { class: "num" }, `${(m.ms / 1000).toFixed(1)}s`));
     } else {
-      outcome.append(chip(m.status === "unavailable" ? `unavailable: ${m.error}` : "invalid input", "red"), h("span", {}, "The agent proceeds with its own plan."));
-      for (const c of call.items.values()) { c.classList.remove("waiting"); c.querySelector(".verdict").replaceChildren(h("span", { class: "faint" }, "not judged")); }
+      tally.append(h("span", { style: "color:var(--warm)" }, m.status === "unavailable" ? `Jev unavailable (${m.error}); the agent went ahead with its plan` : "invalid input"));
+      for (const r of call.items.values()) r.querySelector(".verdict").replaceWith(h("span", { class: "verdict" }, "not judged"));
     }
-    if (m.limitations && m.limitations.length) outcome.append(h("details", {}, h("summary", {}, `${m.limitations.length} ${m.limitations.length === 1 ? "limitation" : "limitations"}`), h("ul", { class: "lims" }, m.limitations.map((l) => h("li", {}, l)))));
-    call.el.append(outcome);
-    call.el.querySelector('[data-role="elapsed"]').textContent = `${(m.ms / 1000).toFixed(1)}s`;
-    follow(outcome);
+    if (m.limitations && m.limitations.length) tally.append(h("details", { class: "lims-wrap" }, h("summary", {}, `${m.limitations.length} ${m.limitations.length === 1 ? "note" : "notes"}`), h("ul", { class: "lims" }, m.limitations.map((l) => h("li", {}, l)))));
+    call.el.append(tally);
+    follow(tally);
   }
 
-  // ---- side column: the six questions of the latest call, and the policy
-  function renderSide(questions) {
-    const side = $("side");
-    side.replaceChildren(
-      h("div", { class: "card" }, h("h2", {}, "The questions, one Jev request per item"),
-        h("div", { style: "display:flex;flex-direction:column;gap:8px;margin-top:8px" }, Object.entries(questions || {}).map(([key, q]) =>
-          h("div", { class: "q" }, h("div", { class: "key" }, key), h("div", {}, q.instructions), h("div", { class: "crit" }, `yes: ${q.criteria.true}\nno: ${q.criteria.false}`))))),
-      h("div", { class: "card policy" }, h("h2", {}, "How code turns probabilities into a call"),
-        h("div", {}, h("b", {}, "keep"), " when necessary ≥ 0.65, or the request or a stated convention supports it at ≥ 0.7."),
-        h("div", {}, h("b", {}, "simplify"), " only when necessary < 0.35, the rest of the plan suffices at ≥ 0.7, no requested / convention / safety signal reaches 0.5, and there is more than one item."),
-        h("div", {}, h("b", {}, "review"), " for everything else: the mid-band around 0.5 and any conflicting signals, always with ", h("b", {}, "uncertain"), "."),
-        h("div", { class: "faint" }, "Reasons quote the text the agent sent. Nothing about the repository is invented. Jev never sees the thresholds.")),
+  function renderHow() {
+    const q = state.questions || {};
+    $("how-body").replaceChildren(
+      h("div", { class: "qs" }, Object.entries(q).map(([key, v]) => h("div", { class: "q" }, h("div", { class: "key" }, key), h("div", { class: "ins" }, v.instructions)))),
+      h("div", {}, h("b", {}, "keep"), " when necessary ≥ 0.65, or the request or a stated convention supports it at ≥ 0.7. ", h("b", {}, "simplify"), " only when necessary < 0.35, the rest of the plan suffices at ≥ 0.7, no requested / convention / safety signal reaches 0.5, and there is more than one item. ", h("b", {}, "review"), " for everything else, always marked uncertain. Reasons quote the text the agent sent; nothing about the repository is invented."),
     );
   }
-  renderSide(null);
+  renderHow();
 
-  $("run").addEventListener("click", async () => {
-    $("run").disabled = true;
-    try { await fetch("/run", { method: "POST" }); } finally { setTimeout(() => { $("run").disabled = false; }, 1500); }
-  });
+  $("run").addEventListener("click", async () => { $("run").disabled = true; try { await fetch("/run", { method: "POST" }); } finally { setTimeout(() => { $("run").disabled = false; }, 1500); } });
 
   const es = new EventSource("/events");
   es.onmessage = (e) => {
     const m = JSON.parse(e.data);
-    if (m.type === "hello") { state.model = m.setup.model; renderStatus(); renderEmpty(); return; }
+    if (m.type === "hello") { state.model = m.setup.model; renderFacts(); renderEmpty(); return; }
     if (m.type === "call") onCall(m);
     else if (m.type === "item") onItem(m);
     else if (m.type === "done") onDone(m);
   };
-  es.onerror = () => { $("status").append(h("span", { style: "color: var(--red)" }, "Lost connection. Is `npm run viz` still running?")); };
-  renderStatus(); renderEmpty();
+  es.onerror = () => { $("live").classList.remove("live"); $("live").replaceChildren(h("i", { class: "dot", style: "background:var(--warm)" }), "disconnected · is npm run viz still up?"); };
+  renderFacts(); renderEmpty();
 })();
 </script>
 </body>

@@ -6,7 +6,7 @@ import { createRelay } from "../viz/relay.js";
 import { checkPlan, LIMITS, planItemSchema } from "./planning-checker.js";
 
 export const SERVER_NAME = "bytesjev";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.2.1";
 
 const itemResultSchema = z.object({
   id: z.string(),
