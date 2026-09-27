@@ -32,7 +32,18 @@ npm run smoke:mcp        # drives the stdio server the way Claude Code does
 { "mcpServers": { "bytesjev": { "command": "npx", "args": ["tsx", "src/mcp/index.ts"] } } }
 ```
 
-Open Claude Code in this directory and the `PlanningChecker` tool is available. To use it in other repositories, copy that entry into their `.mcp.json` (or your user-level MCP config) with the `args` path pointed at this checkout, and copy `.claude/skills/bytesjev/SKILL.md` to `~/.claude/skills/bytesjev/`. The skill tells Claude Code when to call the tool, what to send, how to treat `review`, and how to justify keeping a flagged item.
+Open Claude Code in this directory and the `PlanningChecker` tool is available.
+
+### Use it in any other repository
+
+The server reads its key from this checkout's `.env` wherever it is launched from, so other repositories need no key of their own. Once, from anywhere, register it for your user (replace the path with your checkout):
+
+```sh
+claude mcp add --scope user bytesjev -- /path/to/bytesjev/node_modules/.bin/tsx /path/to/bytesjev/src/mcp/index.ts
+mkdir -p ~/.claude/skills && cp -R /path/to/bytesjev/.claude/skills/bytesjev ~/.claude/skills/
+```
+
+The first line makes the tool available in every Claude Code session on this machine; the second installs the skill that tells Claude Code when to call it, what to send, how to treat `review`, and how to justify keeping a flagged item. Run `/mcp` in an open session to reconnect. To share the setup with a team instead, put the same `command` and `args` (absolute paths) in that repository's `.mcp.json` and the skill under its `.claude/skills/bytesjev/`; each developer still needs their own checkout and key.
 
 ### Watch it judge
 

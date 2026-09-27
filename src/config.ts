@@ -1,10 +1,23 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-/** Load `.env` from the project root without a dependency. Existing env wins. */
+/** The checkout this file lives in, so the server finds its own .env when launched from another repository. */
+export const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+
+/**
+ * Load `.env` without a dependency: first the checkout's own, then the current
+ * directory's (for a repository that keeps its own key). Existing env wins,
+ * and the first file to set a variable wins over later ones.
+ */
 function loadDotEnv(): void {
-  try {
-    const raw = readFileSync(resolve(process.cwd(), ".env"), "utf8");
+  for (const dir of [PROJECT_ROOT, process.cwd()]) {
+    let raw: string;
+    try {
+      raw = readFileSync(resolve(dir, ".env"), "utf8");
+    } catch {
+      continue;
+    }
     for (const line of raw.split("\n")) {
       const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*(#.*)?$/);
       if (!m) continue;
@@ -13,8 +26,6 @@ function loadDotEnv(): void {
         process.env[key] = value.replace(/^["']|["']$/g, "");
       }
     }
-  } catch {
-    /* no .env is fine */
   }
 }
 loadDotEnv();
@@ -28,6 +39,6 @@ export const config = {
   jev: {
     apiKey: env("TYPESAFE_API_KEY"),
     model: env("JEV_MODEL", "jev-latest"),
-    cacheDir: resolve(process.cwd(), ".cache/jev"),
+    cacheDir: resolve(PROJECT_ROOT, ".cache/jev"),
   },
 };
