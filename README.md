@@ -16,14 +16,15 @@ Jev returns typed answers with calibrated probabilities, in one request that eva
 
 ## Install
 
-You need a TypeSafe API key from https://typesafe.ai. Then, once, from any directory:
+One command, once, from any directory. It asks for your TypeSafe API key (get one at https://typesafe.ai), registers the MCP server with Claude Code for your user, and installs the skill:
 
 ```sh
-claude mcp add --scope user bytesjev -e TYPESAFE_API_KEY=your-key -- npx -y bytesjev
-npx -y bytesjev install-skill
+npx -y bytesjev setup
 ```
 
-The first line registers the MCP server for every Claude Code session on this machine; the key lives in Claude Code's own user config, not in any repository. The second installs the skill to `~/.claude/skills/bytesjev/`, which tells Claude Code when to call the tool, what to send, how to treat `review`, and how to justify keeping a flagged item. Run `/mcp` in an open session to reconnect, and the `PlanningChecker` tool is there.
+The key is stored in Claude Code's own user config, not in any repository. The skill goes to `~/.claude/skills/bytesjev/` and tells Claude Code when to call the tool, what to send, how to treat `review`, and how to justify keeping a flagged item. Run `/mcp` in an open session to reconnect, and the `PlanningChecker` tool is there in every repository you open. Re-run `setup` to change the key; `--key` or `TYPESAFE_API_KEY` in the environment skips the prompt.
+
+By hand, the equivalent is `claude mcp add --scope user bytesjev -e TYPESAFE_API_KEY=your-key -- npx -y bytesjev` followed by `npx -y bytesjev install-skill`.
 
 To share the setup with a team, put `{ "command": "npx", "args": ["-y", "bytesjev"] }` under `mcpServers.bytesjev` in the repository's `.mcp.json` and the skill under its `.claude/skills/bytesjev/`; each developer sets `TYPESAFE_API_KEY` in their own environment.
 
