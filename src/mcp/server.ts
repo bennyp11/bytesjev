@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { Jev } from "../jev/client.js";
+import { DEFAULT_VIZ_URL, narrate } from "../viz/messages.js";
+import { createRelay } from "../viz/relay.js";
 import { checkPlan, LIMITS, planItemSchema } from "./planning-checker.js";
 
 export const SERVER_NAME = "bytesjev";
@@ -35,6 +37,8 @@ export interface ServerDeps {
   jev: Jev | null;
   /** stderr logger; never receives the request body or the API key */
   log?: (line: string) => void;
+  /** local dashboard every call is streamed to while it runs; unreachable is fine */
+  vizUrl?: string;
 }
 
 export function createServer(deps: ServerDeps): McpServer {
@@ -56,8 +60,11 @@ export function createServer(deps: ServerDeps): McpServer {
     },
     async (args) => {
       const started = Date.now();
-      const out = await checkPlan(args, { jev: deps.jev });
-      log(`PlanningChecker ${out.status} items=${args.plan_items.length} ms=${Date.now() - started}${out.status === "unavailable" ? ` error=${out.error}` : ""}`);
+      // A fresh relay per call, so a dashboard started after the server is picked up.
+      const relay = createRelay(deps.vizUrl ?? DEFAULT_VIZ_URL, { log });
+      const out = await checkPlan(args, { jev: deps.jev, observe: narrate((msg) => relay.emit(msg), { source: "claude-code" }) });
+      await relay.done();
+      log(`PlanningChecker ${out.status} items=${args.plan_items.length} ms=${Date.now() - started}${out.status === "unavailable" ? ` error=${out.error}` : ""} streamed=${relay.enabled ? "yes" : "no"}`);
       return {
         content: [{ type: "text", text: JSON.stringify(out, null, 2) }],
         structuredContent: out,

@@ -8,7 +8,7 @@ import {
 } from "@typesafe-ai/sdk";
 import { z } from "zod";
 import type { Jev } from "../jev/client.js";
-import { assessNecessity, type NecessityJudgment } from "../jev/primitives/necessity.js";
+import { assessNecessity, type NecessityJudgment, type NecessityMeta } from "../jev/primitives/necessity.js";
 
 /**
  * PlanningChecker: the one tool BytesJev exposes.
@@ -253,35 +253,48 @@ export function categorize(err: unknown): ErrorCategory {
   return "unknown";
 }
 
+/** Watches one check as it happens: what was sent, each item as Jev answers it, and the outcome. */
+export interface CheckObserver {
+  start?(input: CheckerInput, limitations: string[]): void;
+  item?(judgment: NecessityJudgment, result: ItemResult, meta: NecessityMeta): void;
+  done?(output: CheckerOutput, ms: number): void;
+}
+
 export interface CheckOptions {
   /** null when no key is configured: the tool answers `unavailable` without a network call */
   jev: Jev | null;
   thresholds?: typeof THRESHOLDS;
+  observe?: CheckObserver;
 }
 
 export async function checkPlan(raw: unknown, opts: CheckOptions): Promise<CheckerOutput> {
+  const started = Date.now();
+  const finish = (out: CheckerOutput): CheckerOutput => {
+    opts.observe?.done?.(out, Date.now() - started);
+    return out;
+  };
   const v = validate(raw);
-  if (!v.ok) return { status: "invalid", results: [], errors: v.errors, limitations: [] };
+  if (!v.ok) return finish({ status: "invalid", results: [], errors: v.errors, limitations: [] });
   const { input, limitations } = bound(v.input);
+  opts.observe?.start?.(input, limitations);
 
   if (!opts.jev) {
-    return { status: "unavailable", results: [], error: "no_api_key", limitations: [...limitations, "TYPESAFE_API_KEY is not set; proceed without the check"] };
-  }
-
-  let judgments: NecessityJudgment[];
-  try {
-    judgments = await assessNecessity(opts.jev, {
-      userRequest: input.user_request,
-      repoContext: input.repo_context,
-      items: input.plan_items,
-    });
-  } catch (err) {
-    return { status: "unavailable", results: [], error: categorize(err), limitations: [...limitations, "Jev did not answer; proceed without the check"] };
+    return finish({ status: "unavailable", results: [], error: "no_api_key", limitations: [...limitations, "TYPESAFE_API_KEY is not set; proceed without the check"] });
   }
 
   const byId = new Map(input.plan_items.map((i) => [i.id, i]));
-  const results = judgments.map((j) =>
-    decide(j, byId.get(j.id)!, { userRequest: input.user_request, repoContext: input.repo_context, hasOthers: input.plan_items.length > 1 }, opts.thresholds),
-  );
-  return { status: "ok", results, limitations };
+  const ctx = { userRequest: input.user_request, repoContext: input.repo_context, hasOthers: input.plan_items.length > 1 };
+  let judgments: NecessityJudgment[];
+  try {
+    judgments = await assessNecessity(
+      opts.jev,
+      { userRequest: input.user_request, repoContext: input.repo_context, items: input.plan_items },
+      opts.observe?.item ? (j, meta) => opts.observe!.item!(j, decide(j, byId.get(j.id)!, ctx, opts.thresholds), meta) : undefined,
+    );
+  } catch (err) {
+    return finish({ status: "unavailable", results: [], error: categorize(err), limitations: [...limitations, "Jev did not answer; proceed without the check"] });
+  }
+
+  const results = judgments.map((j) => decide(j, byId.get(j.id)!, ctx, opts.thresholds));
+  return finish({ status: "ok", results, limitations });
 }

@@ -8,6 +8,7 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { config } from "../config.js";
 import { createJev } from "../jev/client.js";
+import { DEFAULT_VIZ_URL } from "../viz/messages.js";
 import { createServer, SERVER_NAME, SERVER_VERSION } from "./server.js";
 
 const log = (line: string): void => {
@@ -25,6 +26,7 @@ const jev = config.jev.apiKey
 
 if (!jev) process.stderr.write(`[${SERVER_NAME}] TYPESAFE_API_KEY is not set; PlanningChecker will answer "unavailable"\n`);
 
-const server = createServer({ jev, log });
+const vizUrl = process.env.VIZ_URL || DEFAULT_VIZ_URL;
+const server = createServer({ jev, log, vizUrl });
 await server.connect(new StdioServerTransport());
-log(`v${SERVER_VERSION} ready on stdio (model ${config.jev.model})`);
+log(`v${SERVER_VERSION} ready on stdio (model ${config.jev.model}, dashboard ${vizUrl})`);

@@ -96,10 +96,21 @@ export function necessityQuestions(opts: { hasContext: boolean; hasOthers: boole
   };
 }
 
-export async function assessNecessity(jev: Jev, input: NecessityInput): Promise<NecessityJudgment[]> {
+export interface NecessityMeta {
+  ms: number;
+  inputTokens: number | null;
+}
+
+/** Items are judged in parallel; `onItem` fires as each answer lands, in arrival order. */
+export async function assessNecessity(
+  jev: Jev,
+  input: NecessityInput,
+  onItem?: (judgment: NecessityJudgment, meta: NecessityMeta) => void,
+): Promise<NecessityJudgment[]> {
   const hasContext = Boolean(input.repoContext && input.repoContext.trim());
   return Promise.all(
     input.items.map(async (item) => {
+      const started = Date.now();
       const others = input.items.filter((o) => o.id !== item.id).map((o) => o.change);
       const hasOthers = others.length > 0;
       const state: Record<string, JsonValue> = {
@@ -109,9 +120,9 @@ export async function assessNecessity(jev: Jev, input: NecessityInput): Promise<
         ...(hasOthers ? { other_plan_items: others } : {}),
       };
       const questions = necessityQuestions({ hasContext, hasOthers });
-      const { answers } = await jev.ask(state, questions, "necessity");
-      const a = answers as Record<string, { noul: number } | undefined>;
-      return {
+      const res = await jev.ask(state, questions, "necessity");
+      const a = res.answers as Record<string, { noul: number } | undefined>;
+      const judgment: NecessityJudgment = {
         id: item.id,
         necessary: a.necessary!.noul,
         requested: a.requested!.noul,
@@ -120,6 +131,8 @@ export async function assessNecessity(jev: Jev, input: NecessityInput): Promise<
         speculative: a.speculative!.noul,
         droppable: hasOthers ? a.droppable!.noul : null,
       };
+      onItem?.(judgment, { ms: Date.now() - started, inputTokens: (res as { usage?: { input_tokens?: number } }).usage?.input_tokens ?? null });
+      return judgment;
     }),
   );
 }

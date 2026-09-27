@@ -7,6 +7,7 @@
   "description": "BytesJev PlanningChecker: a local MCP server that asks Jev whether each item in a coding agent's plan is actually needed by the request.",
   "scripts": {
     "mcp": "tsx src/mcp/index.ts",
+    "viz": "tsx src/viz/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -34,6 +34,14 @@ npm run smoke:mcp        # drives the stdio server the way Claude Code does
 
 Open Claude Code in this directory and the `PlanningChecker` tool is available. To use it in other repositories, copy that entry into their `.mcp.json` (or your user-level MCP config) with the `args` path pointed at this checkout, and copy `.claude/skills/bytesjev/SKILL.md` to `~/.claude/skills/bytesjev/`. The skill tells Claude Code when to call the tool, what to send, how to treat `review`, and how to justify keeping a flagged item.
 
+### Watch it judge
+
+```sh
+npm run viz          # then open http://localhost:4310
+```
+
+A local page that shows every PlanningChecker call as it happens: the request, each plan item, Jev's six judgments per item drawn as probability meters with the decision threshold as a tick, and the `keep` / `simplify` / `review` code derives from them, with the reason and the quoted evidence. The MCP server posts each call to the page while it runs, so Claude Code in one window and the page in another give a live picture; if the page is not running, nothing changes for the tool. The page can also run the bundled example itself. Press **⌘M** (or add `?mobile`) for a 9:16 phone frame meant for vertical screen recordings; `?dark` and `?light` force the appearance. Set `VIZ_URL` if the page is not on `http://localhost:4310`.
+
 ### The tool
 
 **Input**
@@ -73,6 +81,8 @@ src/mcp/server.ts              the PlanningChecker tool: schema, description, lo
 src/mcp/planning-checker.ts    validation, limits, the decision policy, reasons
 src/jev/primitives/necessity.ts  the six Jev questions per item
 src/jev/client.ts              Jev client with timeouts, usage accounting, optional cache
+src/viz/                       the live dashboard: server, page, the messages the MCP server relays
+src/example.ts                 the copy-link example used by the smoke test and the page
 .claude/skills/bytesjev/       the Claude Code skill
 test/                          offline tests with a scripted Jev
 scripts/                       live smoke tests
