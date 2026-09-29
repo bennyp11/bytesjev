@@ -47,6 +47,7 @@
 
   /* One check: a card in the site's skill-card idiom. */
   .call { display: flex; flex-direction: column; gap: 14px; padding: 26px 28px; border: 1px solid #fff; border-radius: 24px; background: linear-gradient(145deg, #fffef9, #eaf0e8); box-shadow: 0 8px 25px -20px #17334466, inset 0 1px 0 white; animation: fade 240ms ease-out; }
+  .call.focus { border-color: var(--accent); box-shadow: 0 0 0 3px #446c6033, 0 8px 25px -20px #17334466; }
   .call .head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
   .call .head .when { margin-left: auto; font-size: 11px; color: var(--muted); }
   .call .req { font-size: 30px; line-height: 1.12; text-wrap: pretty; }
@@ -248,7 +249,7 @@
     if (state.calls.has(m.id)) return;
     if (!callsEl.querySelector(".call")) callsEl.replaceChildren();
     const items = new Map();
-    const card = h("section", { class: "call", "data-call": m.id },
+    const card = h("section", { class: "call", id: m.id, "data-call": m.id },
       h("div", { class: "head" },
         h("span", { class: "eyebrow" }, m.source === "claude-code" ? "from Claude Code" : "from this page"),
         h("span", { class: "eyebrow" }, `${m.items.length} plan ${m.items.length === 1 ? "item" : "items"}`),
@@ -261,8 +262,16 @@
     state.calls.set(m.id, { el: card, items, msg: m });
     state.count += 1; renderFacts();
     if (m.questions) { state.questions = m.questions; renderHow(); }
-    follow(card);
+    if (location.hash.slice(1) === m.id) reveal(card); else follow(card);
   }
+
+  // A link from the status line lands on one check: open every item and scroll to it.
+  function reveal(card) {
+    card.classList.add("focus");
+    for (const d of card.querySelectorAll("details.item")) d.open = true;
+    requestAnimationFrame(() => card.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+  addEventListener("hashchange", () => { const card = document.getElementById(location.hash.slice(1)); if (card) reveal(card); });
 
   function onItem(m) {
     const call = state.calls.get(m.id); if (!call) return;
@@ -278,7 +287,6 @@
     const body = row.querySelector(".body");
     body.append(
       h("div", { class: "signals" }, SIGNALS.map((s) => meterRow(s, j))),
-      h("div", { class: "reason" }, r.reason),
       r.evidence && r.evidence.length ? h("details", { class: "ev" }, h("summary", {}, "what it quoted"), h("div", { class: "quote" }, r.evidence.join("\n\n"))) : null,
     );
     if (typeof m.inputTokens === "number") state.tokens += m.inputTokens;

@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import type { Jev } from "../jev/client.js";
-import { DEFAULT_VIZ_URL, narrate } from "../viz/messages.js";
+import { DEFAULT_VIZ_URL, narrate, newCallId } from "../viz/messages.js";
 import { createRelay } from "../viz/relay.js";
 import { combine, statusObserver } from "../status.js";
 import { checkPlan, LIMITS, planItemSchema } from "./planning-checker.js";
@@ -62,8 +62,14 @@ export function createServer(deps: ServerDeps): McpServer {
     async (args) => {
       const started = Date.now();
       // A fresh relay per call, so a dashboard started after the server is picked up.
-      const relay = createRelay(deps.vizUrl ?? DEFAULT_VIZ_URL, { log });
-      const out = await checkPlan(args, { jev: deps.jev, observe: combine(narrate((msg) => relay.emit(msg), { source: "claude-code" }), statusObserver()) });
+      const vizUrl = deps.vizUrl ?? DEFAULT_VIZ_URL;
+      const relay = createRelay(vizUrl, { log });
+      // One id for this check, shared by the dashboard and the status line, so the line can link to it.
+      const id = newCallId();
+      const out = await checkPlan(args, {
+        jev: deps.jev,
+        observe: combine(narrate((msg) => relay.emit(msg), { id, source: "claude-code" }), statusObserver({ url: `${vizUrl.replace(/\/$/, "")}/#${id}` })),
+      });
       await relay.done();
       log(`PlanningChecker ${out.status} items=${args.plan_items.length} ms=${Date.now() - started}${out.status === "unavailable" ? ` error=${out.error}` : ""} streamed=${relay.enabled ? "yes" : "no"}`);
       return {

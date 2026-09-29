@@ -30,7 +30,7 @@ To share the setup with a team, put `{ "command": "npx", "args": ["-y", "bytesje
 
 ### See the verdicts under the chat
 
-`setup` also adds a Claude Code status line, so every check shows up beneath the conversation as it happens: first `judging 6 plan items…`, then `keep 2 · simplify 2 · review 2 · 0.3s` with the flagged items named on a second line. The MCP server writes that text to `~/.claude/bytesjev/status.txt` after each check and the status line prints the file; nothing accumulates. If you already have a status line, `setup` leaves it alone and tells you what to append to its command (`npx bytesjev status` prints the same text).
+`setup` also adds a Claude Code status line, so every check shows up beneath the conversation as it happens: first `judging 6 plan items…`, then `keep 2 · simplify 2 · review 2 · 0.3s` with the flagged items named on a second line. The MCP server writes that text to `~/.claude/bytesjev/status.txt` after each check and the status line prints the file; nothing accumulates. The line is a link: in a terminal that supports links (iTerm2, Ghostty, Kitty, WezTerm), Cmd+click opens the dashboard at that check with every item expanded. If you already have a status line, `setup` leaves it alone and tells you what to append to its command (`npx bytesjev status` prints the same text).
 
 ### Watch it judge
 

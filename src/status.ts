@@ -14,17 +14,30 @@ export const STATUS_FILE = join(STATUS_DIR, "status.txt");
 export const STATUS_LINE_COMMAND = `cat "${STATUS_FILE}" 2>/dev/null`;
 
 const A = { reset: "\x1b[0m", dim: "\x1b[2m", green: "\x1b[32m", orange: "\x1b[33m", blue: "\x1b[34m", bold: "\x1b[1m" };
+const PLAIN = { reset: "", dim: "", green: "", orange: "", blue: "", bold: "" };
 const clock = (t: number): string => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const short = (s: string, n = 44): string => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+/** OSC 8 hyperlink: Cmd+click opens it in terminals that support links (iTerm2, Ghostty, Kitty, WezTerm). */
+const link = (text: string, url: string | undefined): string => (url ? `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\` : text);
 
-export function formatJudging(t: number, count: number, color = true): string {
-  const c = color ? A : { reset: "", dim: "", green: "", orange: "", blue: "", bold: "" };
-  return `${c.bold}/bytesjev${c.reset} ${c.dim}${clock(t)}${c.reset} · judging ${count} plan ${count === 1 ? "item" : "items"}…`;
+export interface StatusFormat {
+  color?: boolean;
+  /** dashboard URL for this check; the line becomes a link to it */
+  url?: string;
 }
 
-export function formatDone(t: number, input: CheckerInput | null, out: CheckerOutput, ms: number, color = true): string {
-  const c = color ? A : { reset: "", dim: "", green: "", orange: "", blue: "", bold: "" };
-  const head = `${c.bold}/bytesjev${c.reset} ${c.dim}${clock(t)}${c.reset}`;
+function head(t: number, f: StatusFormat): string {
+  const c = f.color === false ? PLAIN : A;
+  return link(`${c.bold}/bytesjev${c.reset} ${c.dim}${clock(t)}${c.reset}`, f.url);
+}
+
+export function formatJudging(t: number, count: number, f: StatusFormat = {}): string {
+  return `${head(t, f)} · judging ${count} plan ${count === 1 ? "item" : "items"}…`;
+}
+
+export function formatDone(t: number, input: CheckerInput | null, out: CheckerOutput, ms: number, f: StatusFormat = {}): string {
+  const c = f.color === false ? PLAIN : A;
+  const head = link(`${c.bold}/bytesjev${c.reset} ${c.dim}${clock(t)}${c.reset}`, f.url);
   if (out.status === "invalid") return `${head} · invalid input (${out.errors[0] ?? "see the tool result"})`;
   if (out.status === "unavailable") return `${head} · Jev unavailable (${out.error}) · the plan went ahead unchecked`;
   const n = { keep: 0, simplify: 0, review: 0 };
@@ -38,7 +51,7 @@ export function formatDone(t: number, input: CheckerInput | null, out: CheckerOu
   const rev = out.results.filter((r) => r.recommendation === "review").map((r) => r.id);
   if (simp.length) flagged.push(`${c.orange}simplify${c.reset} ${list(simp)}`);
   if (rev.length) flagged.push(`${c.blue}review${c.reset} ${list(rev)}`);
-  return flagged.length ? `${line1}\n${flagged.join("   ")}` : line1;
+  return flagged.length ? `${line1}\n${link(flagged.join("   "), f.url)}` : line1;
 }
 
 function write(text: string): void {
@@ -50,16 +63,16 @@ function write(text: string): void {
   }
 }
 
-/** A CheckObserver that keeps the status file current. */
-export function statusObserver(): CheckObserver {
+/** A CheckObserver that keeps the status file current. With `url`, the line links to this check on the dashboard. */
+export function statusObserver(opts: { url?: string } = {}): CheckObserver {
   let input: CheckerInput | null = null;
   return {
     start(i) {
       input = i;
-      write(formatJudging(Date.now(), i.plan_items.length));
+      write(formatJudging(Date.now(), i.plan_items.length, opts));
     },
     done(out, ms) {
-      write(formatDone(Date.now(), input, out, ms));
+      write(formatDone(Date.now(), input, out, ms, opts));
     },
   };
 }
