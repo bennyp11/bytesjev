@@ -1,6 +1,6 @@
 {
   "name": "bytesjev",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "license": "MIT",
   "type": "module",
   "description": "PlanningChecker: a local MCP server for Claude Code that asks Jev (TypeSafe System One) whether each item in the agent's plan is actually needed, with a live dashboard.",

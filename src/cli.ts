@@ -6,11 +6,12 @@
  * `npx bytesjev install-skill` copy the Claude Code skill to ~/.claude/skills/bytesjev
  */
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync } from "node:fs";
+import { cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
 import { PROJECT_ROOT } from "./config.js";
+import { STATUS_FILE, STATUS_LINE_COMMAND } from "./status.js";
 
 const cmd = process.argv[2];
 
@@ -20,6 +21,28 @@ function installSkill(): string {
   mkdirSync(to, { recursive: true });
   cpSync(from, to, { recursive: true });
   return to;
+}
+
+/**
+ * Show each check's verdicts in Claude Code's status line, under the chat.
+ * Adds a statusLine to ~/.claude/settings.json when none is configured;
+ * otherwise leaves the existing one alone and says what to append.
+ */
+function installStatusLine(): string {
+  const path = join(homedir(), ".claude", "settings.json");
+  let settings: Record<string, unknown> = {};
+  try {
+    settings = JSON.parse(readFileSync(path, "utf8")) as Record<string, unknown>;
+  } catch {
+    /* missing or empty: start fresh */
+  }
+  if (settings.statusLine) {
+    return `You already have a status line; to add the verdicts to it, append this to its command:  ; ${STATUS_LINE_COMMAND}`;
+  }
+  settings.statusLine = { type: "command", command: STATUS_LINE_COMMAND, refreshInterval: 2 };
+  mkdirSync(join(homedir(), ".claude"), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(settings, null, 2)}\n`);
+  return "Added a status line to ~/.claude/settings.json: each check's verdicts show under the chat.";
 }
 
 /** Ask for the key without echoing it. `--key X` or TYPESAFE_API_KEY in the environment skips the prompt. */
@@ -63,6 +86,7 @@ async function setup(): Promise<void> {
   }
   const to = installSkill();
   console.log(`Installed the skill to ${to}.`);
+  console.log(installStatusLine());
   console.log("\nDone. In an open Claude Code session run /mcp and reconnect; new sessions have PlanningChecker already.");
   console.log("To watch it judge plans live: npx bytesjev viz, then open http://localhost:4310");
 }
@@ -75,12 +99,20 @@ if (cmd === undefined || cmd === "mcp") {
   await import("./viz/server.js");
 } else if (cmd === "install-skill") {
   console.log(`installed the skill to ${installSkill()}`);
+} else if (cmd === "status") {
+  // The last check's verdicts, as written by the MCP server. Usable directly as a status line command.
+  try {
+    process.stdout.write(readFileSync(STATUS_FILE, "utf8"));
+  } catch {
+    /* no check yet: print nothing */
+  }
 } else {
-  console.error(`usage: bytesjev [setup | mcp | viz | install-skill]
+  console.error(`usage: bytesjev [setup | mcp | viz | status | install-skill]
 
-  setup          one-time: ask for the TypeSafe key, register the MCP server with Claude Code, install the skill
+  setup          one-time: ask for the TypeSafe key, register the MCP server with Claude Code, install the skill and the status line
   (no command)   run the PlanningChecker MCP server over stdio
   viz            run the live dashboard (VIZ_PORT, default 4310)
+  status         print the last check's verdicts (what the status line shows)
   install-skill  copy the Claude Code skill to ~/.claude/skills/bytesjev`);
   process.exit(cmd === "--help" || cmd === "-h" ? 0 : 2);
 }
